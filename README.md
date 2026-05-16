@@ -284,3 +284,73 @@ class SpotDifferenceGUI:
 if __name__ == "__main__":
     app = SpotDifferenceGUI()
     app.run()
+
+# Create the Load Image and Reveal buttons
+        load_btn = tk.Button(top_frame, text="Load Image", command=self.load_image)
+        load_btn.grid(row=0, column=0, padx=10)
+        reveal_btn = tk.Button(top_frame, text="Reveal", command=self.reveal_all)
+        reveal_btn.grid(row=0, column=1, padx=10)
+
+        # Label displaying the number of differences still unfound for the current image
+        self.remaining_label = tk.Label(top_frame, text="Remaining: 5", font=("Arial", 12))
+        self.remaining_label.grid(row=0, column=2, padx=10)
+
+        # Label displaying the number of mistakes
+        self.mistakes_label = tk.Label(top_frame,text="Mistakes: 0", font=("Arial", 12))
+        self.mistakes_label.grid(row=0, column=3, padx=10)
+
+        image_frame = tk.Frame(self.root)
+        image_frame.pack()
+
+        #  Canvas for displaying the images and drawing the circles
+        self.left_canvas = tk.Canvas(image_frame, width=500, height=500, bg="lightgray")
+        self.left_canvas.grid(row=0, column=0, padx=10)
+        self.right_canvas = tk.Canvas(image_frame, width=500, height=500, bg="lightgray")
+        self.right_canvas.grid(row=0, column=1, padx=10)
+
+        # The modified image on the right is the only image that responds to player clicks
+        self.right_canvas.bind("<Button-1>", self.on_click)
+
+
+    def load_image(self):
+        # Allows the user to browse for image.
+        file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg *.png *.bmp *.jpeg")])
+        if not file_path:
+            return
+
+        image = cv2.imread(file_path)
+        if image is None:
+            messagebox.showerror("Error","Could not load image.")
+            return
+
+        image = self.resize_image(image)
+        self.original_image = image
+        self.modified_image = self.ImageModifier.create_modified_image(image)
+        self.display_images()
+
+        self.game.reset()
+
+        self.update_labels()
+
+    def resize_image(self, image):
+        height, width = image.shape[:2]
+        max_size = 500
+        scale = min(max_size / width, max_size / height)
+        new_width = int(width * scale)
+        new_height = int(height * scale)
+        return cv2.resize(image, (new_width, new_height))
+
+    def convert_to_tk(self, image):
+        image_rgb = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        pil_image = Image.fromarray(image_rgb)
+        return ImageTk.PhotoImage(pil_image)
+
+    # Display the images on canvas
+    def display_images(self):
+        self.original_tk = self.convert_to_tk(self.original_image)
+        self.modified_tk = self.convert_to_tk(self.modified_image)
+        
+        self.left_canvas.delete("all")
+        self.right_canvas.delete("all")
+        self.left_canvas.create_image(0, 0, anchor=tk.NW, image=self.original_tk)
+        self.right_canvas.create_image(0, 0, anchor=tk.NW, image=self.modified_tk)
